@@ -214,7 +214,14 @@ textarea.field{display:block;width:100%;margin-top:8px;resize:vertical;min-heigh
 @keyframes toast{0%{transform:translateY(12px);opacity:0}10%,80%{transform:none;opacity:1}100%{opacity:0}}
 [hidden]{display:none!important}
 
-@media(max-width:900px){ .layout{grid-template-columns:1fr} }
+@media(max-width:900px){
+  .layout{grid-template-columns:1fr}
+  /* 휴대폰: 뽑기 시작은 화면 맨 아래에 붙어서 스크롤해도 따라옵니다 */
+  .gobar{position:fixed;left:0;right:0;bottom:0;z-index:8;padding:22px 14px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(12,3,6,0),rgba(12,3,6,.94) 34%);pointer-events:none}
+  .gobar .btn.go{pointer-events:auto;max-width:560px;margin:0 auto;display:block;font-size:25px;padding:15px 16px 13px;border-radius:17px;box-shadow:inset 0 0 0 2px #FFD98A, 0 5px 0 #7A0A28, 0 10px 24px rgba(227,32,79,.45)}
+  body.hasGo{padding-bottom:calc(98px + env(safe-area-inset-bottom,0px))}
+  body.hasGo .toasts{bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+}
 @media(max-width:520px){
   .modes{gap:6px}
   .mode{font-size:14px;gap:4px;padding:9px 0 8px;flex-direction:column}
@@ -305,7 +312,7 @@ textarea.field{display:block;width:100%;margin-top:8px;resize:vertical;min-heigh
       </div>
 
       <div>
-        <button class="btn go" id="startBtn" type="button" hidden>뽑기 시작</button>
+        <div class="gobar" id="goBar" hidden><button class="btn go" id="startBtn" type="button" hidden>뽑기 시작</button></div>
         <button class="btn" id="claimBtn" type="button" hidden style="width:100%">방장 맡기</button>
         <p class="hint" id="hint"></p>
       </div>
@@ -1244,7 +1251,7 @@ function renderUI() {
   $('#exclIn').checked = !!st.excl; $('#exclIn').disabled = busy;
   const outN = Object.keys(state.out || {}).length; $('#exclReset').hidden = !(st.excl && outN) || busy;
 
-  const start = $('#startBtn'); start.hidden = !host; start.disabled = busy || pn < 2;
+  const start = $('#startBtn'); start.hidden = !host; $('#goBar').hidden = !host; document.body.classList.toggle('hasGo', host); start.disabled = busy || pn < 2;
   start.textContent = busy ? '뽑는 중' : ph === 'done' ? '다시 뽑기' : '뽑기 시작';
   const canClaim = joined && !host && (!state.hostId || !hostHere) && !busy; $('#claimBtn').hidden = !canClaim;
   $('#hint').textContent = host ? '' : canClaim ? '방장이 나갔습니다. 방장을 맡으면 뽑기를 시작할 수 있습니다.' : `${label()} ${k}${unit()}을 뽑습니다. 시작은 방장이 합니다.`;
