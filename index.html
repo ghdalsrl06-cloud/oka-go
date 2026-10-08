@@ -57,7 +57,9 @@ const APP_NAME = '오카 ㄱ?';
   --display:"Black Han Sans","IBM Plex Sans KR",sans-serif;
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%}
+html{-webkit-text-size-adjust:100%;touch-action:manipulation}
+button,canvas,.mode,.emo,.seg{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button,canvas{-webkit-user-select:none;user-select:none}
 body{
   margin:0; color:var(--cream); min-height:100vh;
   font:500 16px/1.5 "IBM Plex Sans KR",system-ui,sans-serif;
@@ -622,7 +624,7 @@ const bgCv = document.createElement('canvas'), bgx = bgCv.getContext('2d');
 function resize() {
   const full = document.fullscreenElement === $('#stageBox');
   const w = cv.clientWidth || 300, h = Math.round(full ? innerHeight - 36 : w < 520 ? w * 1.16 : Math.min(w * 0.72, 640)), d = Math.min(devicePixelRatio || 1, 2);
-  cv.width = bgCv.width = w * d; cv.height = bgCv.height = h * d; cv.style.height = h + 'px';
+  cv.width = bgCv.width = Math.round(w * d); cv.height = bgCv.height = Math.round(h * d); cv.style.height = h + 'px';
   glowCv.width = Math.ceil(cv.width / GS); glowCv.height = Math.ceil(cv.height / GS); s2.width = Math.ceil(cv.width / 10); s2.height = Math.ceil(cv.height / 10);
   mainCtx.setTransform(d, 0, 0, d, 0, 0); W = w; H = h; DPR = d; paintBg();
 }
@@ -772,7 +774,7 @@ function drawRoulette(P, plan, e, T) {
     for (let i = 0; i < n; i++) {
       ctx.save(); ctx.rotate((i + .5) * sl); ctx.translate((rOut + rMid) / 2, 0); if (flat) ctx.rotate(Math.PI / 2);
       const [t, p2] = fitFont(items[i].name, px, (flat ? arcW : ringH) - 14);
-      ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fillText(t, 1, p2 * .07 + 2);
+      ctx.lineJoin = 'round'; ctx.lineWidth = Math.max(1.5, p2 * .1); ctx.strokeStyle = win >= 0 && i !== win ? 'rgba(0,0,0,.2)' : 'rgba(0,0,0,.45)'; ctx.strokeText(t, 0, p2 * .07);
       ctx.fillStyle = win >= 0 && i !== win ? 'rgba(255,244,220,.32)' : '#FFF7E0'; ctx.fillText(t, 0, p2 * .07); ctx.restore();
     }
     for (const [r, lw] of [[rOut, 3.5], [rMid, 2], [rIn, 3.5]]) { disc(0, 0, r, null, '#7A4A06', lw + 1.6); disc(0, 0, r, null, '#FFE08A', lw * .5); }
@@ -813,7 +815,7 @@ function drawSlot(P, plan, e, T) {
   const fpx = Math.min(rowH * .44, rw * .3);
   for (let q = 0; q < 3; q++) {
     const rx = x + q * (rw + gap), st = spin ? spin.strips[q] : null, p = st ? reelPos(st, local, spin.d[q]) : 0;
-    const vel = st && live ? Math.abs(p - reelPos(st, local - 16, spin.d[q])) / 16 : 0, blur = REDUCED ? 0 : clamp(vel * rowH * 9, 0, rowH * .42), stopped = live && local >= spin.d[q];
+    const vel = st && live ? Math.abs(p - reelPos(st, local - 16, spin.d[q])) / 16 : 0, blur = REDUCED ? 0 : clamp(vel * rowH * 9, 0, rowH * .34), stopped = live && local >= spin.d[q];
     if (st && live && !stopped) { const fi = Math.floor(p); if (fi !== lastReel[q]) { lastReel[q] = fi; if (!snd.has('s_reel')) sfx.tick(.7 + q * .12); } }
     ctx.save(); ctx.beginPath(); ctx.roundRect(rx, y, rw, mh, 6); ctx.clip();
     ctx.fillStyle = '#FFF9EA'; ctx.fillRect(rx, y, rw, mh);
@@ -823,13 +825,11 @@ function drawSlot(P, plan, e, T) {
       const th = (k - p) / 2.1; if (Math.abs(th) > 1.25) continue;
       const cw = rw - 10, ch = rowH - 8, col = who ? who.color : '#E8DDC0';
       ctx.save(); ctx.translate(rx + rw / 2, cyc + rowH * 2.1 * Math.sin(th)); ctx.scale(1, Math.max(.05, Math.cos(th)));
-      for (const dy of blur > 2 ? [-blur, 0, blur] : [0]) {
-        ctx.globalAlpha = blur > 2 ? .4 : 1;
-        rr(-cw / 2, -ch / 2 + dy, cw, ch, 10, vgrad(-ch / 2 + dy, ch / 2 + dy, shade(col, .35), col, shade(col, -.1)));
-        rr(-cw / 2 + 5, -ch / 2 + 4 + dy, cw - 10, ch * .34, 7, 'rgba(255,255,255,.25)');
-        const [t, p2] = fitFont(who ? who.name : '?', fpx, cw - 10); ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(t, 0, dy + p2 * .07);
-      }
+      rr(-cw / 2, -ch / 2, cw, ch, 10, vgrad(-ch / 2, ch / 2, shade(col, .35), col, shade(col, -.1)));
+      rr(-cw / 2 + 5, -ch / 2 + 4, cw - 10, ch * .34, 7, 'rgba(255,255,255,.25)');
+      const [t, p2] = fitFont(who ? who.name : '?', fpx, cw - 10), fast = blur > rowH * .1; ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      if (fast) { ctx.save(); ctx.globalAlpha = .5; ctx.scale(1, 1 + blur * 2.2 / p2); ctx.fillText(t, 0, p2 * .07); ctx.restore(); }   /* 빠를 땐 글씨를 세로로 길게 늘여 속도감만 냅니다 */
+      else ctx.fillText(t, 0, p2 * .07);
       ctx.globalAlpha = 1;
       if (stopped && k === st.length - 2) rr(-cw / 2, -ch / 2, cw, ch, 10, null, hit ? (blink ? '#fff' : INK) : INK, hit ? 5 : 3);
       ctx.restore();
