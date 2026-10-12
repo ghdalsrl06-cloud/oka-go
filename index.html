@@ -497,7 +497,11 @@ const sfx = (() => {
   };
 })();
 /* 브라우저는 사용자가 한 번 눌러야 소리를 허락합니다. 아이폰은 특히 touchend·click에서만 풀리므로 여러 이벤트에 걸어 둡니다 */
-for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListener(ev, () => { sfx.ensure(); snd.load(); }, { passive: true, capture: true });
+/* 아이폰 무음 스위치: 웹오디오는 무음 스위치에 막히지만, <audio>를 한 번 재생해 두면 '재생' 모드로 바뀌어 같이 들립니다 */
+const unmuteEl = (() => { const a = document.createElement('audio'); a.setAttribute('playsinline', ''); a.loop = true; a.preload = 'auto'; a.src = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjYwLjE2LjEwMAAAAAAAAAAAAAAA//NwwAAAAAAAAAAAAEluZm8AAAAPAAAADAAAAfAAa2tra2tra2t5eXl5eXl5eYaGhoaGhoaGlJSUlJSUlJSUoaGhoaGhoaGurq6urq6urry8vLy8vLy8vMnJycnJycnJ19fX19fX19fl5eXl5eXl5eXy8vLy8vLy8v//////////AAAAAExhdmM2MC4zMQAAAAAAAAAAAAAAACQDNwAAAAAAAAHwgaEhFwAAAAAAAAAAAAAAAAD/8xDEAAAAA0gAAAAATEFNRTMuMTAwVVVVVf/zEsQNAAADSAAAAABVVVVVVVVVVVVVVVVVVf/zEMQbAAADSAAAAABVVVVVVVVVVVVVVVVV//MQxCgAAANIAAAAAFVVVVVVVVVVVVVVVVX/8xDENQAAA0gAAAAAVVVVVVVVVVVVVVVVVf/zEMRCAAADSAAAAABVVVVVVVVVVVVVVVVV//MQxE8AAANIAAAAAFVVVVVVVVVVVVVVVVX/8xDEXAAAA0gAAAAAVVVVVVVVVVVVVVVVVf/zEMRpAAADSAAAAABVVVVVVVVVVVVVVVVV//MSxHYAAANIAAAAAFVVVVVVVVVVVVVVVVVV//MQxIQAAANIAAAAAFVVVVVVVVVVVVVVVVX/8xDEkQAAA0gAAAAAVVVVVVVVVVVVVVVVVQ=='; return a; })();
+let unmuted = false;
+function unmute() { if (unmuted) return; const r = unmuteEl.play(); if (r && r.then) r.then(() => { unmuted = true; }).catch(() => {}); }
+for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListener(ev, () => { sfx.ensure(); snd.load(); if (ev !== 'pointerdown') unmute(); }, { passive: true, capture: true });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) sfx.ensure(); });
 
 /* ───────── 녹음된 소리: audio 폴더의 나레이션(v_)과 효과음(s_). 파일이 없으면 위의 합성음이 대신 납니다 ───────── */
