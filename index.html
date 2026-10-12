@@ -112,7 +112,16 @@ button{-webkit-tap-highlight-color:transparent}
   background:linear-gradient(180deg,rgba(64,13,29,.84),rgba(28,6,13,.92)); border:1px solid rgba(255,197,61,.5); border-radius:26px;
   box-shadow:0 26px 60px rgba(0,0,0,.65), inset 0 0 0 5px rgba(20,5,10,.55), inset 0 0 0 6px rgba(255,197,61,.22);
 }
-.stage{padding:14px}
+.stage{padding:14px;perspective:1300px;perspective-origin:50% 40%}
+/* 무대는 기울기에 따라 3D로 살짝 돌아가고, 안의 캔버스·당첨 카드는 앞으로 떠 있습니다 */
+.stageWrap{transform-style:preserve-3d;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));will-change:transform}
+.stageWrap canvas{transform:translateZ(14px)}
+.stageWrap .win{transform:translateZ(40px)}
+.stageWrap .floaters{transform:translateZ(28px)}
+.stageWrap::before,.stageWrap::after{transform:translateZ(6px)}
+.stageWrap:fullscreen{transform:none}
+.lite .stageWrap,.lite .stageWrap *{transform:none!important;will-change:auto;transform-style:flat}
+.lite .stage{perspective:none}
 .modes{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
 .mode{
   display:flex;align-items:center;justify-content:center;gap:8px; font:400 19px/1 var(--display); padding:13px 4px 12px; white-space:nowrap;
@@ -373,6 +382,7 @@ const EMO = ['👏','😂','😱','🙏','☕','🔥'];
 const SPIN = 8000, HOLD = 2600, MIX = 3200, EACH = 3200, INTRO = 900, TRACE = 7000, LREV = 1400, LEAD = 3200, MISS = 1300, JHOLD = 2800;
 const DEFAULT_LABEL = '커피 사는 사람';
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches, PHONE = TOUCH && Math.min(screen.width, screen.height) < 600;
 /* 그림 자산(배경, 펠트, 룰렛, 슬롯, 캡슐 기계, 카드)은 파일 안에 들어 있습니다 */
 const IMG = {};
 if (typeof ART !== 'undefined') {
@@ -455,7 +465,7 @@ const sfx = (() => {
     jackpot() { for (let i = 0; i < 22; i++) tone(1800 + Math.random() * 1800, .09, 'square', .035, i * .075); fanfare(.05); }
   };
 })();
-addEventListener('pointerdown', () => { sfx.ensure(); snd.load(); }, { passive: true });
+addEventListener('pointerdown', () => { sfx.ensure(); snd.load(); if (joined) startGyro(); }, { passive: true });
 
 /* ───────── 녹음된 소리: audio 폴더의 나레이션(v_)과 효과음(s_). 파일이 없으면 위의 합성음이 대신 납니다 ───────── */
 const snd = (() => {
@@ -647,12 +657,12 @@ function reelPos(st, local, dur) {
 const cv = $('#cv'), mainCtx = cv.getContext('2d'); let ctx = mainCtx, W = 0, H = 0, DPR = 1;
 /* 빛나는 것들(전구, 네온, 금빛)은 작은 캔버스에 한 번 더 그려서 번지게 합니다.
    기기가 느리면 자동으로 꺼집니다. 주소 끝에 &fx=high 또는 &fx=low 를 붙이면 고정됩니다. */
-const FX = url.searchParams.get('fx'); let GLOW = FX !== 'low';
+const FX = url.searchParams.get('fx'); let GLOW = FX === 'high' ? true : FX === 'low' ? false : !(PHONE && (navigator.hardwareConcurrency || 4) <= 4);   /* 느린 휴대폰은 처음부터 빛 번짐을 끕니다 */
 const GS = 3, glowCv = document.createElement('canvas'), gctx = glowCv.getContext('2d'), s2 = document.createElement('canvas'), s2x = s2.getContext('2d');
 const bgCv = document.createElement('canvas'), bgx = bgCv.getContext('2d');
 function resize() {
   const full = document.fullscreenElement === $('#stageBox');
-  const w = cv.clientWidth || 300, h = Math.round(full ? innerHeight - 36 : w < 520 ? w * 1.16 : Math.min(w * 0.72, 640)), d = Math.min(devicePixelRatio || 1, 2);
+  const w = cv.clientWidth || 300, h = Math.round(full ? innerHeight - 36 : w < 520 ? Math.min(w * 1.16, Math.max(w * .9, innerHeight - 250)) : Math.min(w * 0.72, 640)), d = Math.min(devicePixelRatio || 1, PHONE ? 1.6 : 2);
   cv.width = bgCv.width = Math.round(w * d); cv.height = bgCv.height = Math.round(h * d); cv.style.height = h + 'px';
   glowCv.width = Math.ceil(cv.width / GS); glowCv.height = Math.ceil(cv.height / GS); s2.width = Math.ceil(cv.width / 10); s2.height = Math.ceil(cv.height / 10);
   mainCtx.setTransform(d, 0, 0, d, 0, 0); W = w; H = h; DPR = d; paintBg();
@@ -742,13 +752,40 @@ function paintBg() {   // 움직이지 않는 바탕은 크기가 바뀔 때 한
   const v = ctx.createRadialGradient(W / 2, H / 2, m * .36, W / 2, H / 2, Math.hypot(W, H) * .62); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.55)');
   ctx.fillStyle = v; ctx.fillRect(0, 0, W, H); ctx = keep;
 }
-let mx = 0, my = 0, px = 0, py = 0;   /* PC에서 마우스를 따라 조명이 살짝 기웁니다 */
-addEventListener('mousemove', ev => { mx = (ev.clientX / innerWidth - .5) * 2; my = (ev.clientY / innerHeight - .5) * 2; }, { passive: true });
+const hueCv = document.createElement('canvas'), huex = hueCv.getContext('2d'); let hueLast = -1;
+let mx = 0, my = 0, px = 0, py = 0, gyroOn = false, g0 = null;   /* PC는 마우스, 휴대폰은 기울기를 따라 무대와 조명이 움직입니다 */
+addEventListener('mousemove', ev => { if (TOUCH) return; mx = (ev.clientX / innerWidth - .5) * 2; my = (ev.clientY / innerHeight - .5) * 2; }, { passive: true });
+function onTilt(ev) {
+  if (ev.beta == null || ev.gamma == null) return; gyroOn = true;
+  const land = (screen.orientation && screen.orientation.angle || window.orientation || 0) % 180 !== 0;
+  let b = land ? ev.gamma : ev.beta, g = land ? ev.beta : ev.gamma;   /* 가로로 들면 축이 바뀝니다 */
+  if (g0 === null) g0 = { b, g }; g0.b += (b - g0.b) * .01; g0.g += (g - g0.g) * .01;   /* 드는 자세가 바뀌어도 천천히 기준을 따라갑니다 */
+  mx = clamp((g - g0.g) / 18, -1, 1); my = clamp((b - g0.b) / 18, -1, 1);
+}
+function startGyro() {   /* 아이폰은 한 번 눌러서 허락을 받아야 합니다 */
+  if (!TOUCH || REDUCED || gyroOn) return;
+  const D = window.DeviceOrientationEvent; if (!D) return;
+  if (typeof D.requestPermission === 'function') D.requestPermission().then(r => { if (r === 'granted') addEventListener('deviceorientation', onTilt, { passive: true }); }).catch(() => {});
+  else addEventListener('deviceorientation', onTilt, { passive: true });
+}
+let lastRx = 0, lastRy = 0;
+function applyTilt() {
+  if (REDUCED || document.fullscreenElement) return;
+  if (document.body.classList.contains('lite')) return;
+  const rx = Math.round(-py * 3.2 * 4) / 4, ry = Math.round(px * 4.2 * 4) / 4;
+  if (rx !== lastRx || ry !== lastRy) { lastRx = rx; lastRy = ry; const st = $('#stageBox').style; st.setProperty('--rx', rx + 'deg'); st.setProperty('--ry', ry + 'deg'); }
+}
 function drawBackdrop(T) {
   ctx.drawImage(bgCv, 0, 0, W, H);
   if (REDUCED) return;
-  px += (mx - px) * .04; py += (my - py) * .04;
+  px += (mx - px) * (gyroOn ? .08 : .04); py += (my - py) * (gyroOn ? .08 : .04); applyTilt();
   const r = Math.max(W, H) * .46;
+  if (!PHONE || GLOW) {   /* 색이 천천히 흐르는 조명: 작은 캔버스에 가끔만 다시 그립니다 */
+    const hue = Math.floor((T * .008) % 360 / 3) * 3;
+    if (hue !== hueLast || hueCv.width !== Math.ceil(W / 8)) { hueLast = hue; hueCv.width = Math.ceil(W / 8); hueCv.height = Math.ceil(H / 8); const w = hueCv.width, h = hueCv.height;
+      const cg = huex.createRadialGradient(w * (.5 + .35 * Math.sin(T * .00011)), h * .5, 0, w * .5, h * .5, Math.max(w, h) * .7); cg.addColorStop(0, `hsl(${hue} 90% 60%)`); cg.addColorStop(1, 'rgba(0,0,0,0)'); huex.clearRect(0, 0, w, h); huex.fillStyle = cg; huex.fillRect(0, 0, w, h); }
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .13; ctx.drawImage(hueCv, 0, 0, W, H); ctx.restore();
+  }
   for (const k of [0, 1]) ctx.drawImage(lightCv, W * (.5 + .4 * Math.sin(T * .00021 + k * 2.4)) - r + px * 18 * (k + 1), H * (.45 + .22 * Math.cos(T * .00017 + k * 1.3)) - r + py * 12 * (k + 1), r * 2, r * 2);
   const rng = mulberry32(77);
   for (let i = 0; i < 22; i++) {
@@ -889,7 +926,7 @@ function drawSlot(P, plan, e, T) {
 function coins(seed, t) {
   const rng = mulberry32(seed ^ 0x51ED27), ks = clamp(W / 760, .5, 1);   /* 작은 화면에선 금화도 작고 적게 */
   for (let i = 0; i < 54; i++) {
-    const x0 = rng() * W, d = rng() * 1.3, vy = 260 + rng() * 260, sz = (12 + rng() * 10) * ks; if (ks < .8 && i % 3 === 0) continue; sp = 6 + rng() * 8, tt = t - d; if (tt < 0) continue;
+    const x0 = rng() * W, d = rng() * 1.3, vy = 260 + rng() * 260, sz = (12 + rng() * 10) * ks, sp = 6 + rng() * 8, tt = t - d; if (tt < 0 || (ks < .8 && i % 3 === 0)) continue;
     const yy = -20 + vy * tt + 240 * tt * tt; if (yy > H + 20) continue;
     ctx.save(); ctx.translate(x0, yy); ctx.scale(Math.max(.15, Math.abs(Math.cos(tt * sp))), 1);
     if (IMG.coin) ctx.drawImage(IMG.coin, -sz, -sz, sz * 2, sz * 2); else disc(0, 0, sz, vgrad(-sz, sz, '#FFF1B8', '#F0A21A'), '#8A5206', 1.5);
@@ -1109,6 +1146,13 @@ function drawCountdown(e) {
   ctx.strokeText(String(n), 0, px * .07); ctx.fillStyle = vgrad(-px / 2, px / 2, '#FFFBE6', '#FFC53D', '#F08A12'); ctx.fillText(String(n), 0, px * .07);
   ctx.restore();
 }
+function drawSweep(T, ph) {   /* 7초마다 사선 빛줄기가 무대를 쓸고 지나갑니다 */
+  if (REDUCED) return;
+  const k = (T % 7000) / 7000; if (k > .34) return;
+  const x = -W * .6 + (W * 2.2) * (k / .34), g = ctx.createLinearGradient(x, 0, x + W * .5, H * .6);
+  g.addColorStop(0, 'rgba(255,236,190,0)'); g.addColorStop(.5, `rgba(255,236,190,${ph === 'running' ? .07 : .12})`); g.addColorStop(1, 'rgba(255,236,190,0)');
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(0, 0, W, H); ctx.restore();
+}
 function drawHush(plan, e) {   /* 공개 2초 전: 가장자리가 어두워지며 심장 뛰듯 조여듭니다 */
   const left = plan.total - e; if (left > 2200 || left < 0 || REDUCED) return;
   const k = 1 - left / 2200, beat = Math.pow(Math.abs(Math.sin(e / 1000 * Math.PI * (1.4 + k * 1.4))), 6);
@@ -1136,7 +1180,7 @@ function drawWinFx(plan, t, T) {
   if (t > 6) return;
   if (plan.mode !== 'slot') coins(plan.seed ^ 0x77, t - .25);
   const r2 = mulberry32(plan.seed ^ 0x9E3779B9);
-  for (let i = 0; i < 110; i++) {
+  for (let i = 0; i < (W < 600 ? 60 : 110); i++) {
     const x0 = r2() * W, vx = (r2() - .5) * 130, vy = 110 + r2() * 250, sz = 6 + r2() * 9, sp = 4 + r2() * 8, delay = r2() * 1.6, tt = t - delay; if (tt < 0) continue;
     ctx.save(); ctx.translate(x0 + vx * tt, -20 + vy * tt + 120 * tt * tt); ctx.rotate(tt * sp); ctx.globalAlpha = clamp(6 - t, 0, 1);
     ctx.fillStyle = COLORS[i % COLORS.length]; ctx.fillRect(-sz / 2, -sz / 4, sz, sz / 2); ctx.restore();
@@ -1214,7 +1258,7 @@ function setStatus(t) { if (t !== lastStatus) { lastStatus = t; el.status.textCo
 function frame(T) {
   const dt = Math.min(T - lastT, 50); lastT = T;
   if (GLOW && FX !== 'high' && !document.hidden) {   // 2초쯤 계속 버벅이면 빛 번짐을 끕니다
-    slowSum += dt; if (++slowN >= 60) { slowHits = slowSum / slowN > 27 ? slowHits + 1 : 0; slowN = slowSum = 0; if (slowHits >= 2) GLOW = false; }
+    slowSum += dt; if (++slowN >= 60) { slowHits = slowSum / slowN > 27 ? slowHits + 1 : 0; slowN = slowSum = 0; if (slowHits >= 1 && !document.body.classList.contains('lite')) { document.body.classList.add('lite'); slowHits = 0; } else if (slowHits >= 2) GLOW = false; }   /* 먼저 3D 기울기를 끄고, 그래도 느리면 빛 번짐을 끕니다 */
   }
   if (net) {
     const r = state.round && state.round.mode === mode() ? state.round : null, plan = r ? getPlan(r) : null;
@@ -1234,7 +1278,7 @@ function frame(T) {
     if (shake) ctx.translate((Math.random() - .5) * shake * 2, (Math.random() - .5) * shake * 2);
     ({ roulette: drawRoulette, slot: drawSlot, cards: drawCards, capsule: drawCapsule, ladder: drawLadder })[mode()](P, plan, eDraw, T, dt);
     ctx.restore();
-    bloom();
+    bloom(); drawSweep(T, ph);
     if (ph === 'running') drawHush(plan, e);
     if (ph === 'ready') drawCountdown(e);
     if (ph === 'done') { drawWinFx(plan, wt, T); if (!REDUCED && wt < .22) { ctx.fillStyle = `rgba(255,250,230,${.85 * (1 - wt / .22)})`; ctx.fillRect(0, 0, W, H); } }
@@ -1372,7 +1416,7 @@ function join(name) {
   if (state.kicked && state.kicked[me.id]) net.update({ ['kicked/' + me.id]: null });
   net.presence(me.id, { name, joinedAt: net.now() });
   if (!state.hostId) net.claimHost(me.id, null);
-  $('#gate').hidden = true; renderUI();
+  $('#gate').hidden = true; renderUI(); startGyro();
   snd.load(); setTimeout(() => snd.sayWhenReady('welcome'), 500);
 }
 $('#joinForm').onsubmit = ev => {
