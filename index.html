@@ -457,7 +457,7 @@ const sfx = (() => {
   let ac = null, master = null, muted = store.get(localStorage, 'oka-mute') === '1', lastTick = 0, VOL = clamp((+store.get(localStorage, 'oka-vol') || 70) / 100, 0, 1);
   function ensure() {
     if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = .5 * VOL; master.connect(ac.destination); } catch { ac = null; } }
-    if (ac && ac.state === 'suspended') ac.resume().catch(() => {});
+    if (ac && ac.state !== 'running') ac.resume().catch(() => {});
   }
   function tone(f, dur, type = 'sine', vol = .2, delay = 0, to = 0) {
     if (!ac || muted || ac.state !== 'running') return;
@@ -496,7 +496,9 @@ const sfx = (() => {
     jackpot() { for (let i = 0; i < 22; i++) tone(1800 + Math.random() * 1800, .09, 'square', .035, i * .075); fanfare(.05); }
   };
 })();
-addEventListener('pointerdown', () => { sfx.ensure(); snd.load(); }, { passive: true });
+/* 브라우저는 사용자가 한 번 눌러야 소리를 허락합니다. 아이폰은 특히 touchend·click에서만 풀리므로 여러 이벤트에 걸어 둡니다 */
+for (const ev of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListener(ev, () => { sfx.ensure(); snd.load(); }, { passive: true, capture: true });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) sfx.ensure(); });
 
 /* ───────── 녹음된 소리: audio 폴더의 나레이션(v_)과 효과음(s_). 파일이 없으면 위의 합성음이 대신 납니다 ───────── */
 const snd = (() => {
@@ -510,7 +512,8 @@ const snd = (() => {
       .then(b => new Promise((res, rej) => ac.decodeAudioData(b, res, rej))).then(b => { buf[n] = b; }).catch(() => {}));
   }
   function play(n, vol) {
-    const ac = sfx.ac; if (sfx.muted || !buf[n] || !ac || ac.state !== 'running') return null;
+    const ac = sfx.ac; if (ac && ac.state !== 'running') ac.resume().catch(() => {});
+    if (sfx.muted || !buf[n] || !ac || ac.state !== 'running') return null;
     const src = ac.createBufferSource(), g = ac.createGain(); src.buffer = buf[n]; g.gain.value = vol; src.connect(g); g.connect(out);
     const h = { stop(fade = .08) { try { g.gain.setTargetAtTime(0, ac.currentTime, fade / 3); src.stop(ac.currentTime + fade); } catch {} live.delete(h); } };
     src.onended = () => live.delete(h); live.add(h); src.start(); return h;
@@ -1637,6 +1640,7 @@ function join(name) {
   if (!state.hostId) net.claimHost(me.id, null);
   $('#gate').hidden = true; renderUI(); startGyro(false);
   snd.load(); setTimeout(() => snd.sayWhenReady('welcome'), 500);
+  setTimeout(() => { if (!sfx.muted && (!sfx.ac || sfx.ac.state !== 'running')) toast(TOUCH ? '소리가 안 나면 화면을 한 번 톡 쳐 주세요. 아이폰은 무음 스위치도 확인해 주세요' : '소리가 안 나면 화면을 한 번 클릭해 주세요'); }, 2500);
 }
 $('#joinForm').onsubmit = ev => {
   ev.preventDefault(); sfx.ensure(); const name = $('#nameIn').value.trim().slice(0, 12);
