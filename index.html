@@ -859,7 +859,7 @@ function ballAt(ph, t, sl, rT, rP) {
 const pocketColor = (i, n) => n % 2 && i === n - 1 ? '#0B7A3B' : i % 2 ? '#1B1B20' : '#C8102E';
 function drawRoulette(P, plan, e, T) {
   const im = IMG.wheel; if (!im) return;
-  const cx = W / 2, cy = H / 2, R = Math.min(W * .47, H * .47), rOut = R * .60, rMid = R * .455, rIn = R * .305, rT = R * .80, rP = (rMid + rIn) / 2, br = Math.max(4.5, R * .037);
+  const cx = W / 2, cy = H / 2, R = Math.min(W * .47, H * .47), rOut = R * .618, rMid = R * .46, rIn = R * .285, rT = R * .80, rP = (rMid + rIn) / 2, br = Math.max(4.5, R * .037);
   let items = P, rot = REDUCED ? 0 : T * .00018, ball = null, win = -1, holdT = 0;
   if (plan) {
     const s = seqPos(Math.max(e, 0), plan.k), ph = plan.phases[s.i]; items = ph.rem.map(x => P[x]);
@@ -900,8 +900,8 @@ function drawRoulette(P, plan, e, T) {
     for (const [r, lw] of [[rOut, 3.5], [rMid, 2], [rIn, 3.5]]) { disc(0, 0, r, null, '#7A4A06', lw + 1.6); disc(0, 0, r, null, '#FFE08A', lw * .5); }
   }
   /* 가운데: 그림의 원뿔은 원근 때문에 중심이 어긋나 있어, 원뿔은 코드로 그리고 금 손잡이만 그림에서 떼어 함께 돌립니다 */
-  { const cg = ctx.createRadialGradient(-rIn * .25, -rIn * .3, rIn * .05, 0, 0, rIn); cg.addColorStop(0, '#7A3E18'); cg.addColorStop(.55, '#4A2109'); cg.addColorStop(1, '#2A1105'); disc(0, 0, rIn - 1, cg);
-    ctx.save(); ctx.beginPath(); ctx.arc(0, 0, rIn - 1, 0, TAU); ctx.clip(); ctx.globalAlpha = .18; for (let i = 0; i < 24; i++) { ctx.rotate(TAU / 24); ctx.fillStyle = i % 2 ? '#000' : '#C8863A'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, rIn, 0, TAU / 48); ctx.closePath(); ctx.fill(); } ctx.restore();
+  { const cg = ctx.createRadialGradient(-rIn * .25, -rIn * .3, rIn * .05, 0, 0, rIn); cg.addColorStop(0, '#7A3E18'); cg.addColorStop(.55, '#4A2109'); cg.addColorStop(1, '#2A1105'); disc(0, 0, rIn + 2, cg);
+    ctx.save(); ctx.beginPath(); ctx.arc(0, 0, rIn + 2, 0, TAU); ctx.clip(); ctx.globalAlpha = .18; for (let i = 0; i < 24; i++) { ctx.rotate(TAU / 24); ctx.fillStyle = i % 2 ? '#000' : '#C8863A'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, rIn, 0, TAU / 48); ctx.closePath(); ctx.fill(); } ctx.restore();
     disc(0, 0, rIn * .55, 'rgba(0,0,0,.25)'); disc(0, 0, rIn - 2, null, '#7A4A06', 3); disc(0, 0, rIn - 2, null, '#FFE08A', 1.2);
     if (IMG.hub) { const hs = R * .70; ctx.drawImage(pic('hub', hs, hs), -hs / 2, -hs / 2, hs, hs); } }
   if (win >= 0) emit(() => { wedge(win, rOut, rIn); ctx.lineJoin = 'round'; ctx.lineWidth = 4 + 1.5 * Math.sin(T / 110); ctx.strokeStyle = '#FFE9A6'; ctx.stroke(); });
@@ -1364,13 +1364,13 @@ function drawStraws(P, plan, e, T) {
   const cupBack = () => { ctx.beginPath(); ctx.moveTo(cx - cw / 2, top); ctx.lineTo(cx + cw / 2, top); ctx.lineTo(cx + cw * .44, bot); ctx.lineTo(cx - cw * .44, bot); ctx.closePath(); };
   if (!IMG.cup) { cupBack(); ctx.fillStyle = vgrad(top, bot, '#04120E', '#020805'); ctx.fill(); }
   const cupH = chh * 1.06, cupW = cupH * (396 / 713), cupY = top - cupH * .03;
-  if (IMG.cup) { ctx.drawImage(pic('cup', cupW, cupH), cx - cupW / 2, cupY, cupW, cupH); ctx.beginPath(); ctx.ellipse(cx, top + cupH * .035, cupW * .42, cupH * .028, 0, 0, TAU); ctx.fillStyle = '#061A13'; ctx.fill(); }   /* 통 전체를 먼저 그리고, 입구 안쪽은 어둡게 */
+  if (IMG.cup) { ctx.drawImage(pic('cup', cupW, cupH), cx - cupW / 2, cupY, cupW, cupH); ctx.beginPath(); ctx.ellipse(cx, cupY + cupH * .04, cupW * .4, cupH * .022, 0, 0, TAU); ctx.fillStyle = '#061A13'; ctx.fill(); }   /* 통 전체를 먼저 그리고, 입구 안쪽은 어둡게 */
   /* 제비: 표시는 아래쪽 끝에 있어 통 안에 숨어 있고, 뽑아 올리면 드러납니다 */
   const order = plan ? plan.pullAt : null, lastPull = order ? Math.max(...order.filter(t => live && e >= t), -1) : -1;
   P.forEach((who, i) => {
     const x = X(i), pa = order ? order[i] : Infinity, pulled = live && e >= pa, u = pulled ? clamp((e - pa) / 750, 0, 1) : 0, rise = 1 - Math.pow(1 - u, 3);
     const win = plan && plan.winners.includes(i), tilt = (i - (n - 1) / 2) / Math.max(n - 1, 1) * .16 * (1 - rise);
-    const yTop = top - len * .36 - rise * len * .66, yBot = yTop + len, tipShow = clamp((top + cupH * .07 - yBot) / (tipR * 2), 0, 1);
+    const yTop = top - len * .36 - rise * len * .66, yBot = yTop + len, tipShow = clamp((cupY + cupH * .04 - yBot) / (tipR * 2), 0, 1);
     ctx.save(); ctx.translate(x, top); ctx.rotate(tilt); ctx.translate(-x, -top);
     rr(x - sw / 2 + 2, yTop + 3, sw, len, sw / 2, 'rgba(0,0,0,.35)');
     rr(x - sw / 2, yTop, sw, len, sw / 2, vgrad(yTop, yBot, '#F6E6C2', '#D9B986'), 'rgba(90,60,20,.5)', 1);
@@ -1383,7 +1383,7 @@ function drawStraws(P, plan, e, T) {
     if (pulled && (win || pa === lastPull)) { ctx.font = font(clamp(sw * 1.15, 11, 15)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const nm = fit(who.name, 90); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(nm, x, yTop - 12); ctx.fillStyle = win ? '#FFB3C4' : '#FFF4DC'; ctx.fillText(nm, x, yTop - 12); }
   });
   /* 통 앞판 */
-  if (IMG.cup) { ctx.save(); ctx.beginPath(); ctx.rect(0, top + cupH * .07, W, H); ctx.clip(); ctx.drawImage(pic('cup', cupW, cupH), cx - cupW / 2, cupY, cupW, cupH); ctx.restore(); }   /* 앞판은 입구 테두리 아래만 다시 덮어 제비가 통 안에서 올라오는 것처럼 */
+  if (IMG.cup) { ctx.save(); ctx.beginPath(); ctx.rect(0, cupY + cupH * .04, W, H); ctx.clip(); ctx.drawImage(pic('cup', cupW, cupH), cx - cupW / 2, cupY, cupW, cupH); ctx.restore(); }   /* 입구 테두리의 앞쪽 절반부터 아래를 다시 덮어 제비가 통 안에서 올라오는 것처럼 */
   else {
   cupBack(); ctx.fillStyle = vgrad(top, bot, '#8A1F3A', '#4A0E1F'); ctx.fill();
   ctx.lineWidth = 2; ctx.strokeStyle = '#E8B93A'; ctx.stroke();
