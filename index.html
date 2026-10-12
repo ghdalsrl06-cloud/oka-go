@@ -86,7 +86,9 @@ button{-webkit-tap-highlight-color:transparent}
 .top{display:flex;align-items:center;gap:10px 12px;flex-wrap:wrap;margin-bottom:16px}
 .top .spacer{flex:1}
 .badge{display:inline-flex;align-items:center;gap:8px;color:var(--dim);font-size:13px;letter-spacing:.02em;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--glass)}
-.badge i{width:9px;height:9px;border-radius:50%;background:var(--chip);box-shadow:0 0 10px var(--chip)}
+.badge i{width:10px;height:10px;border-radius:50%;background:#5CFFB0;box-shadow:0 0 0 2px rgba(92,255,176,.25), 0 0 12px #2FD08C;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 5px rgba(92,255,176,.08), 0 0 16px #2FD08C;opacity:.75}}
+.badge.local i,.badge.off i{animation:none}
 .badge.off i{background:var(--flare);box-shadow:0 0 10px var(--flare)}
 .badge.local i{background:var(--gold);box-shadow:0 0 10px var(--gold)}
 .notice{border:1px solid var(--line);background:var(--glass);border-left:3px solid var(--gold);border-radius:12px;padding:10px 14px;margin-bottom:16px;font-size:13.5px;color:#EEDDB4}
@@ -305,6 +307,7 @@ textarea.field{display:block;width:100%;margin-top:8px;resize:vertical;min-heigh
     <h1 class="logo" data-app></h1>
     <span class="spacer"></span>
     <span class="badge" id="badge"><i></i><span id="badgeText">연결 중</span></span>
+    <button class="btn ghost" id="tiltBtn" type="button" hidden>기울기 효과</button>
     <button class="btn ghost" id="fsBtn" type="button">전체 화면</button>
     <button class="btn ghost" id="soundBtn" type="button" aria-pressed="true">소리 켜짐</button>
     <label class="vol" title="소리 크기"><input type="range" id="vol" min="0" max="100" value="70" aria-label="소리 크기"></label>
@@ -493,7 +496,7 @@ const sfx = (() => {
     jackpot() { for (let i = 0; i < 22; i++) tone(1800 + Math.random() * 1800, .09, 'square', .035, i * .075); fanfare(.05); }
   };
 })();
-addEventListener('pointerdown', () => { sfx.ensure(); snd.load(); if (joined) startGyro(); }, { passive: true });
+addEventListener('pointerdown', () => { sfx.ensure(); snd.load(); }, { passive: true });
 
 /* ───────── 녹음된 소리: audio 폴더의 나레이션(v_)과 효과음(s_). 파일이 없으면 위의 합성음이 대신 납니다 ───────── */
 const snd = (() => {
@@ -803,12 +806,13 @@ function onTilt(ev) {
   if (g0 === null) g0 = { b, g }; g0.b += (b - g0.b) * .01; g0.g += (g - g0.g) * .01;   /* 드는 자세가 바뀌어도 천천히 기준을 따라갑니다 */
   mx = clamp((g - g0.g) / 18, -1, 1); my = clamp((b - g0.b) / 18, -1, 1);
 }
-function startGyro() {   /* 아이폰은 한 번 눌러서 허락을 받아야 합니다 */
+function startGyro(ask) {   /* 안드로이드는 바로 켜지고, 아이폰은 '기울기 효과' 버튼을 눌러 허락한 뒤에 켜집니다 */
   if (!TOUCH || REDUCED || gyroOn) return;
   const D = window.DeviceOrientationEvent; if (!D) return;
-  if (typeof D.requestPermission === 'function') D.requestPermission().then(r => { if (r === 'granted') addEventListener('deviceorientation', onTilt, { passive: true }); }).catch(() => {});
+  if (typeof D.requestPermission === 'function') { $('#tiltBtn').hidden = false; if (!ask) return; D.requestPermission().then(r => { if (r === 'granted') { addEventListener('deviceorientation', onTilt, { passive: true }); $('#tiltBtn').hidden = true; toast('기울기 효과를 켰습니다'); } }).catch(() => {}); }
   else addEventListener('deviceorientation', onTilt, { passive: true });
 }
+$('#tiltBtn').onclick = () => startGyro(true);
 let lastRx = 0, lastRy = 0;
 function applyTilt() {
   if (REDUCED || document.fullscreenElement) return;
@@ -1631,7 +1635,7 @@ function join(name) {
   if (state.kicked && state.kicked[me.id]) net.update({ ['kicked/' + me.id]: null });
   net.presence(me.id, { name, joinedAt: net.now() });
   if (!state.hostId) net.claimHost(me.id, null);
-  $('#gate').hidden = true; renderUI(); startGyro();
+  $('#gate').hidden = true; renderUI(); startGyro(false);
   snd.load(); setTimeout(() => snd.sayWhenReady('welcome'), 500);
 }
 $('#joinForm').onsubmit = ev => {
