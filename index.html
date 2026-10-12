@@ -126,7 +126,7 @@ button{-webkit-tap-highlight-color:transparent}
 .stageWrap:fullscreen{transform:none}
 .lite .stageWrap,.lite .stageWrap *{transform:none!important;will-change:auto;transform-style:flat}
 .lite .stage{perspective:none}
-.modes{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:12px;padding:4px;border-radius:14px;border:1px solid var(--line);background:var(--field)}
+.modes{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin-bottom:12px;padding:4px;border-radius:14px;border:1px solid var(--line);background:var(--field)}
 .mode{
   display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:9px 6px 8px;border:0;border-radius:10px;cursor:pointer;
   font:400 17px/1 var(--display);color:var(--dim);background:transparent;transition:background .15s,color .15s,box-shadow .15s;
@@ -252,7 +252,8 @@ textarea.field{display:block;width:100%;margin-top:8px;resize:vertical;min-heigh
 [hidden]{display:none!important}
 
 @media(max-width:900px){
-  .layout{grid-template-columns:1fr}
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .stage,.modes{min-width:0;max-width:100%}
   /* 휴대폰: 뽑기 시작은 화면 맨 아래에 붙어서 스크롤해도 따라옵니다 */
   .gobar{position:fixed;left:0;right:0;bottom:0;z-index:8;padding:22px 14px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,rgba(4,18,14,0),rgba(4,18,14,.94) 34%);pointer-events:none}
   .gobar .btn.go{pointer-events:auto;max-width:560px;margin:0 auto;display:block;font-size:25px;padding:15px 16px 13px;border-radius:17px;box-shadow:inset 0 0 0 2px #FFD98A, 0 5px 0 #7A0A28, 0 10px 24px rgba(227,32,79,.45)}
@@ -260,10 +261,20 @@ textarea.field{display:block;width:100%;margin-top:8px;resize:vertical;min-heigh
   body.hasGo .toasts{bottom:calc(104px + env(safe-area-inset-bottom,0px))}
 }
 @media(max-width:520px){
-  .modes{gap:6px}
-  .mode{font-size:13.5px;gap:4px;padding:8px 0 7px;flex-direction:column;min-height:52px}
+  .modes{display:flex;gap:3px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  .modes::-webkit-scrollbar{display:none}
+  .mode{flex:0 0 auto;min-width:66px;font-size:13px;gap:4px;padding:8px 6px 7px;flex-direction:column;min-height:52px;scroll-snap-align:start}
   .mode svg{width:18px;height:18px}
-  .stage{padding:10px}
+  .stage{padding:8px}
+  .wrap{padding:12px 10px 64px}
+  .top{gap:8px;margin-bottom:12px}
+  .logo.art img{height:44px}
+  .btn.ghost{font-size:14px;padding:9px 12px 8px}
+  #copyBtn{font-size:16px;padding:10px 14px 9px}
+  .notice{font-size:12.5px;padding:8px 12px}
+  .under{margin-top:10px}
+  .status{font-size:14.5px}
+  .side{padding:16px 14px}
   .stageWrap{padding:12px}
   .win,.floaters{inset:14px}
   .emo{width:40px;height:40px;font-size:19px}
@@ -387,9 +398,12 @@ const ICON = {
   ladder: '<path d="M7 3v18M17 3v18M7 8h10M7 13h10M7 18h10"/>',
   capsule: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M8 7.5a5 5 0 0 1 4-2"/>',
   slot: '<rect x="3" y="5" width="15" height="14" rx="2.5"/><path d="M8 5v14M13 5v14M21 8v7"/><circle cx="21" cy="7" r="1.6"/>',
-  cards: '<rect x="3.5" y="6" width="10" height="14" rx="2" transform="rotate(-10 8.5 13)"/><rect x="10.5" y="4" width="10" height="14" rx="2" transform="rotate(8 15.5 11)"/>'
+  cards: '<rect x="3.5" y="6" width="10" height="14" rx="2" transform="rotate(-10 8.5 13)"/><rect x="10.5" y="4" width="10" height="14" rx="2" transform="rotate(8 15.5 11)"/>',
+  bomb: '<circle cx="11" cy="14" r="7"/><path d="M14 8l3-3M17 5l2-1M15.5 6.5l1.5 1.5"/>',
+  dice: '<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8" cy="8" r="1.2" fill="currentColor"/><circle cx="16" cy="8" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8" cy="16" r="1.2" fill="currentColor"/><circle cx="16" cy="16" r="1.2" fill="currentColor"/>',
+  straws: '<path d="M5 10h14l-1.5 10h-11z"/><path d="M9 10V4M12 10V3M15 10V5"/><circle cx="12" cy="3" r="1.2" fill="currentColor"/>'
 };
-const MODES = [{id:'roulette',name:'룰렛'},{id:'slot',name:'슬롯'},{id:'cards',name:'카드'},{id:'capsule',name:'캡슐'},{id:'ladder',name:'사다리'}];
+const MODES = [{id:'roulette',name:'룰렛'},{id:'slot',name:'슬롯'},{id:'cards',name:'카드'},{id:'capsule',name:'캡슐'},{id:'ladder',name:'사다리'},{id:'bomb',name:'폭탄'},{id:'dice',name:'주사위'},{id:'straws',name:'제비'}];
 const COLORS = ['#FFC53D','#FF5C7A','#36E2D0','#B18CFF','#FF8A3D','#7BE65A','#4DB8FF','#FF7AE0'];
 const EMO = ['👏','😂','😱','🙏','☕','🔥'];
 const SPIN = 8000, HOLD = 2600, MIX = 3200, EACH = 3200, INTRO = 900, TRACE = 7000, LREV = 1400, LEAD = 3200, MISS = 1300, JHOLD = 2800;
@@ -611,7 +625,20 @@ function buildPlan(r) {
     Object.assign(plan, { R, rungs, winCols, paths, winners: idx.filter(i => winCols.includes(paths[i].end)), total: INTRO + TRACE + LREV });
   } else {
     const winners = shuffle(idx.slice(), rng).slice(0, k); plan.winners = winners;
-    if (r.mode === 'capsule') {
+    if (r.mode === 'bomb') {
+      plan.phases = winners.map((w, i) => { const rem = idx.filter(x => !winners.slice(0, i).includes(x)), j = rem.indexOf(w), start = Math.floor(rng() * rem.length); return { rem, start, hops: ((j - start) % rem.length + rem.length) % rem.length + rem.length * (2 + Math.floor(rng() * 2)) + (rem.length < 4 ? rem.length * 2 : 0) }; });
+      plan.total = k * (BHOP + BHOLD);
+    } else if (r.mode === 'dice') {
+      /* 당첨자가 가장 높은 눈. 당첨이 여럿이면 6,5,4… 순서로, 나머지는 그보다 낮은 눈 */
+      plan.vals = idx.map(() => 1 + Math.floor(rng() * Math.max(1, 6 - k))); winners.forEach((w, i) => { plan.vals[w] = 6 - i; });
+      const order = shuffle(idx.slice(), rng), gap = clamp(2200 / n, 90, 350); plan.settleAt = []; order.forEach((i, q) => { plan.settleAt[i] = DROLL + q * gap; });
+      plan.revealAt = DROLL + (n - 1) * gap + DREV; plan.total = plan.revealAt + DHOLD;
+    } else if (r.mode === 'straws') {
+      const order = shuffle(idx.filter(x => !winners.includes(x)), rng);
+      winners.forEach(w => { const lo = Math.ceil(order.length * .5); order.splice(lo + Math.floor(rng() * (order.length - lo + 1)), 0, w); });
+      const gap = clamp(7000 / n, 380, 900); let t = 700; plan.pullAt = []; order.forEach(i => { plan.pullAt[i] = t; t += winners.includes(i) ? gap + 500 : gap; });
+      plan.revealAt = t + 300; plan.total = plan.revealAt + 2200;
+    } else if (r.mode === 'capsule') {
       plan.total = MIX + k * EACH;
     } else if (r.mode === 'cards') {
       /* 한 장씩 뒤집고, 조커를 받은 사람이 당첨. 조커는 뒤쪽 순서에 섞여 있습니다. */
@@ -796,8 +823,8 @@ function drawBackdrop(T) {
   if (!PHONE || GLOW) {   /* 색이 천천히 흐르는 조명: 작은 캔버스에 가끔만 다시 그립니다 */
     const hue = Math.floor((T * .008) % 360 / 3) * 3;
     if (hue !== hueLast || hueCv.width !== Math.ceil(W / 8)) { hueLast = hue; hueCv.width = Math.ceil(W / 8); hueCv.height = Math.ceil(H / 8); const w = hueCv.width, h = hueCv.height;
-      const cg = huex.createRadialGradient(w * (.5 + .35 * Math.sin(T * .00011)), h * .5, 0, w * .5, h * .5, Math.max(w, h) * .7); cg.addColorStop(0, `hsl(${hue} 90% 60%)`); cg.addColorStop(1, 'rgba(0,0,0,0)'); huex.clearRect(0, 0, w, h); huex.fillStyle = cg; huex.fillRect(0, 0, w, h); }
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .13; ctx.drawImage(hueCv, 0, 0, W, H); ctx.restore();
+      const cg = huex.createRadialGradient(w * (.5 + .35 * Math.sin(T * .00011)), h * .5, 0, w * .5, h * .5, Math.max(w, h) * .7); cg.addColorStop(0, `hsl(${hue} 80% 55%)`); cg.addColorStop(.4, `hsl(${hue} 80% 55% / .3)`); cg.addColorStop(1, `hsl(${hue} 80% 55% / 0)`); huex.clearRect(0, 0, w, h); huex.fillStyle = cg; huex.fillRect(0, 0, w, h); }
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .09; ctx.drawImage(hueCv, 0, 0, W, H); ctx.restore();
   }
   for (const k of [0, 1]) ctx.drawImage(lightCv, W * (.5 + .4 * Math.sin(T * .00021 + k * 2.4)) - r + px * 18 * (k + 1), H * (.45 + .22 * Math.cos(T * .00017 + k * 1.3)) - r + py * 12 * (k + 1), r * 2, r * 2);
   const rng = mulberry32(77);
@@ -1200,12 +1227,158 @@ function drawWinFx(plan, t, T) {
   }
 }
 
+
+/* ───────── 폭탄 돌리기: 폭탄이 사람들 사이를 돌다가 멈춘 사람이 당첨 ───────── */
+const BHOP = 6200, BHOLD = 2400;
+function avatarRing(n) {   /* 참가자를 둥글게 배치. 많으면 두 겹 */
+  const cx = W / 2, cy = H / 2 + 6, two = n > 12, R1 = Math.min(W, H) * (two ? .4 : .36), R2 = R1 * .58, pts = [];
+  const n1 = two ? Math.ceil(n * .62) : n, n2 = n - n1, ar = clamp(Math.min(W, H) * (two ? .055 : .075) * (n1 > 8 ? 8 / n1 + .5 : 1), 14, 34);
+  for (let i = 0; i < n; i++) {
+    const inner = i >= n1, m = inner ? n2 : n1, q = inner ? i - n1 : i, a = -Math.PI / 2 + q / m * TAU + (inner ? Math.PI / m : 0), r = inner ? R2 : R1;
+    pts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r * .88, r: ar });
+  }
+  return pts;
+}
+function avatarDot(p, who, r, dim, lit) {
+  ctx.save(); ctx.globalAlpha = dim ? .28 : 1;
+  disc(p.x + 2, p.y + 4, r, 'rgba(0,0,0,.4)');
+  disc(p.x, p.y, r + 2.5, lit ? '#FFF7D1' : 'rgba(255,255,255,.85)'); disc(p.x, p.y, r, vgrad(p.y - r, p.y + r, shade(who.color, .35), who.color, shade(who.color, -.15)));
+  if (lit) emit(() => disc(p.x, p.y, r * 1.5, 'rgba(255,220,130,.35)'));
+  const [t, px] = fitFont(Array.from(who.name)[0] || '?', r * 1.05, r * 1.6); ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(t, p.x, p.y + px * .07);
+  ctx.font = font(clamp(r * .62, 10, 14)); const nm = fit(who.name, r * 3.2); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(nm, p.x, p.y + r + 12); ctx.fillStyle = '#FFF4DC'; ctx.fillText(nm, p.x, p.y + r + 12);
+  ctx.restore();
+}
+function bombAt(ph, t) {   /* 몇 번째 사람 위에 있나: 처음엔 빠르게, 끝엔 느리게 */
+  const u = clamp(t / BHOP, 0, 1), eased = 1 - Math.pow(1 - u, 3.2), h = Math.floor(ph.hops * eased + 1e-6);
+  return { i: (ph.start + h) % ph.rem.length, h, next: (ph.start + h + 1) % ph.rem.length, frac: ph.hops * eased - h };
+}
+function drawBomb(P, plan, e, T) {
+  const n = P.length; if (!n) { waiting('참가자를 기다리는 중'); return; }
+  const live = plan && e >= 0, s = live ? seqPosB(e, plan.k) : null, ph = s ? plan.phases[s.i] : null;
+  const items = ph ? ph.rem : P.map((_, i) => i), pts = avatarRing(items.length), gone = plan ? plan.winners.slice(0, s ? s.i + (s.hold ? 1 : 0) : 0) : [];
+  const b = ph ? bombAt(ph, Math.min(s.local, BHOP)) : null, boom = s && s.hold ? s.local - BHOP : -1;
+  items.forEach((pi, q) => avatarDot(pts[q], P[pi], pts[q].r, gone.includes(pi) && !(s && s.hold && pi === plan.winners[s.i]), b && !s.hold && b.i === q && (Math.floor(T / 90) % 2 === 0 || b.frac < .5)));
+  if (!plan) { ctx.font = font(clamp(W / 26, 14, 20), true); ctx.textAlign = 'center'; ctx.fillStyle = '#FFE9A6'; ctx.fillText('폭탄이 멈춘 사람이 당첨', W / 2, H / 2 + 6); return; }
+  if (!b) return;
+  const br = clamp(Math.min(W, H) * .07, 18, 40);
+  if (boom < 0) {
+    const a = pts[b.i], nx = pts[b.next], f = clamp((b.frac - .35) / .65, 0, 1), jump = Math.sin(f * Math.PI);
+    const x = a.x + (nx.x - a.x) * f, y = a.y - a.r - br * .9 + (nx.y - a.y) * f - jump * br * 1.6;
+    const fuse = clamp((s.local - (BHOP - 1400)) / 1400, 0, 1);
+    ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(T * .006) * .12 * (1 - fuse) + f * .3);
+    disc(3, 5, br, 'rgba(0,0,0,.4)');
+    const bg = ctx.createRadialGradient(-br * .35, -br * .35, br * .1, 0, 0, br); bg.addColorStop(0, '#5A5A66'); bg.addColorStop(.6, '#1C1C24'); bg.addColorStop(1, '#07070A');
+    disc(0, 0, br, bg); disc(-br * .3, -br * .32, br * .22, 'rgba(255,255,255,.35)');
+    rr(-br * .22, -br * 1.15, br * .44, br * .4, 4, '#8A8A96');
+    ctx.lineWidth = 3; ctx.strokeStyle = '#C9A15A'; ctx.beginPath(); ctx.moveTo(0, -br * 1.1); ctx.quadraticCurveTo(br * .5, -br * 1.7, br * .9 * (1 - fuse * .8), -br * (1.9 - fuse * .5)); ctx.stroke();
+    const sx = br * .9 * (1 - fuse * .8), sy = -br * (1.9 - fuse * .5);
+    emit(() => { disc(sx, sy, 4 + Math.random() * 3, '#FFF3B0'); disc(sx, sy, 9 + Math.random() * 4, 'rgba(255,170,40,.45)'); });
+    if (!REDUCED) for (let i = 0; i < 5; i++) { const an = (T * .02 + i * 1.3) % TAU, d = 8 + ((T * .25 + i * 37) % 22); disc(sx + Math.cos(an) * d, sy + Math.sin(an) * d - d * .4, 1.6, 'rgba(255,220,140,.8)'); }
+    ctx.restore();
+    if (fuse > 0 && ph.rem.length > 1) { ctx.font = font(clamp(W / 22, 15, 24), true); ctx.textAlign = 'center'; ctx.fillStyle = `rgba(255,120,120,${.6 + .4 * Math.sin(T * .02)})`; ctx.fillText('곧 터집니다…', W / 2, H / 2 + 6); }
+  } else {
+    const a = pts[b.i], w = P[ph.rem[b.i]], k = boom / 1000;
+    if (k < .9 && !REDUCED) {
+      const rr0 = br * (1 + k * 9);
+      ctx.save(); ctx.globalAlpha = 1 - k / .9;
+      disc(a.x, a.y, rr0, `rgba(255,140,40,${.5 * (1 - k)})`); disc(a.x, a.y, rr0 * .6, `rgba(255,230,160,${.7 * (1 - k)})`);
+      ctx.lineWidth = 6 * (1 - k); ctx.strokeStyle = '#FFF3B0'; ctx.beginPath(); ctx.arc(a.x, a.y, rr0 * 1.1, 0, TAU); ctx.stroke();
+      const rng = mulberry32(plan.seed ^ (s.i + 1) * 977);
+      for (let i = 0; i < 26; i++) { const an = rng() * TAU, sp = 90 + rng() * 220, d = sp * k, sz = 2 + rng() * 4; disc(a.x + Math.cos(an) * d, a.y + Math.sin(an) * d + 120 * k * k, sz, i % 3 ? '#3A3A44' : '#FF9A3D'); }
+      ctx.restore();
+    }
+    for (let i = 0; i < 4; i++) { const t2 = k - i * .12; if (t2 > 0 && t2 < 1.6) disc(a.x + (i - 1.5) * 14, a.y - 30 - t2 * 60, 14 + t2 * 22, `rgba(60,60,70,${.35 * (1 - t2 / 1.6)})`); }
+    namePlate(W / 2, H / 2 + 6, w.name, w.color, back((boom - 250) / 450), Math.min(W - 40, 440));
+  }
+}
+function seqPosB(e, k) {
+  const i = Math.min(Math.floor(e / (BHOP + BHOLD)), k - 1), local = e - i * (BHOP + BHOLD);
+  return { i, local, hold: local >= BHOP };
+}
+
+/* ───────── 주사위: 모두 한 번에 굴리고, 가장 높은 눈이 당첨 ───────── */
+const DROLL = 3000, DREV = 1200, DHOLD = 2000;
+function diceGrid(n) {
+  const cols = clamp(Math.ceil(Math.sqrt(n * (W / H) * 1.1)), 1, 8), rows = Math.ceil(n / cols);
+  const cw = (W - 24) / cols, chh = (H - 36) / rows, sz = clamp(Math.min(cw * .5, chh * .42), 22, 74), pts = [];
+  for (let i = 0; i < n; i++) { const c = i % cols, r = Math.floor(i / cols), inRow = Math.min(cols, n - r * cols), off = (cols - inRow) * cw / 2; pts.push({ x: 12 + off + cw * (c + .5), y: 18 + chh * (r + .5) - sz * .12, sz }); }
+  return pts;
+}
+function drawDie(x, y, sz, face, rot, tilt, color) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(1, Math.max(.3, Math.abs(Math.cos(tilt))));
+  rr(-sz / 2 + 3, -sz / 2 + 6, sz, sz, sz * .2, 'rgba(0,0,0,.4)');
+  rr(-sz / 2, -sz / 2, sz, sz, sz * .2, vgrad(-sz / 2, sz / 2, '#FFFDF4', '#F0E8D2', '#CFC3A4'), 'rgba(90,70,40,.6)', 1.5);
+  rr(-sz / 2 + 4, -sz / 2 + 3, sz - 8, sz * .3, sz * .12, 'rgba(255,255,255,.55)');
+  const pip = sz * .09, o = sz * .27, P6 = { 1: [[0, 0]], 2: [[-o, -o], [o, o]], 3: [[-o, -o], [0, 0], [o, o]], 4: [[-o, -o], [o, -o], [-o, o], [o, o]], 5: [[-o, -o], [o, -o], [0, 0], [-o, o], [o, o]], 6: [[-o, -o], [o, -o], [-o, 0], [o, 0], [-o, o], [o, o]] };
+  for (const [px, py] of P6[face] || []) { disc(px, py + 1, pip, 'rgba(0,0,0,.25)'); disc(px, py, pip, face === 1 || face === 4 ? '#D7263D' : color || '#1A0A0E'); }
+  ctx.restore();
+}
+function drawDice(P, plan, e, T) {
+  const n = P.length; if (!n) { waiting('참가자를 기다리는 중'); return; }
+  const pts = diceGrid(n), live = plan && e >= 0, rng = mulberry32((plan ? plan.seed : 7) ^ 0xD1CE);
+  if (!plan) { ctx.font = font(clamp(W / 26, 14, 20), true); ctx.textAlign = 'center'; ctx.fillStyle = '#FFE9A6'; ctx.fillText('가장 높은 눈이 당첨', W / 2, H - 14); }
+  P.forEach((who, i) => {
+    const p = pts[i], settleAt = plan ? plan.settleAt[i] : 0, settled = live && e >= settleAt, rolling = live && !settled;
+    const ph = rng() * TAU, spd = 7 + rng() * 5;
+    let face = plan ? plan.vals[i] : 1 + Math.floor(rng() * 6), rot = 0, tilt = 0, y = p.y;
+    if (rolling) { const u = e / settleAt, slow = clamp((settleAt - e) / 900, 0, 1); face = 1 + Math.floor((e / (80 + (1 - slow) * 260) + i * 2.3) % 6); rot = Math.sin(T * .004 * spd + ph) * .6 * slow; tilt = T * .009 * spd * slow + ph; y = p.y - Math.abs(Math.sin(T * .006 * spd + ph)) * p.sz * .5 * slow; }
+    const win = plan && plan.winners.includes(i), rev = live && e >= plan.revealAt, dim = rev && !win;
+    ctx.save(); if (dim) ctx.globalAlpha = .35;
+    if (rev && win) emit(() => disc(p.x, p.y, p.sz * .95, `rgba(255,220,130,${.25 + .15 * Math.sin(T * .01)})`));
+    drawDie(p.x, y, p.sz, face, rot, tilt, settled && win && rev ? '#B8860B' : null);
+    if (settled && !REDUCED && e - settleAt < 260) { const k = (e - settleAt) / 260; ctx.strokeStyle = `rgba(255,243,176,${1 - k})`; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(p.x, p.y, p.sz * (.7 + k * .6), 0, TAU); ctx.stroke(); }
+    ctx.font = font(clamp(p.sz * .3, 11, 16)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const nm = fit(who.name, p.sz * 2.2);
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.55)'; ctx.strokeText(nm, p.x, p.y + p.sz * .78); ctx.fillStyle = rev && win ? '#FFE9A6' : '#FFF4DC'; ctx.fillText(nm, p.x, p.y + p.sz * .78);
+    ctx.restore();
+  });
+  if (live && e >= plan.revealAt) { const w = plan.winners.map(i => P[i]); namePlate(W / 2, H / 2, plan.names.join(', '), w[0].color, back((e - plan.revealAt - 200) / 450), Math.min(W - 40, 460)); }
+}
+
+/* ───────── 제비뽑기: 통에서 하나씩 뽑고, 끝이 빨간 제비가 당첨 ───────── */
+function drawStraws(P, plan, e, T) {
+  const n = P.length; if (!n) { waiting('참가자를 기다리는 중'); return; }
+  const cw = Math.min(W * .5, 300), chh = Math.min(H * .42, 210), cx = W / 2, cy = H - 26 - chh / 2, top = cy - chh / 2, bot = cy + chh / 2;
+  const live = plan && e >= 0, len = clamp(Math.min(H * .42, (top - 50) / 1.06), 70, 230), sw = clamp(Math.min(cw * 1.3 / n, 14), 5, 14), spread = Math.min(cw * .78, n * (sw + 6));
+  const X = i => cx - spread / 2 + spread * (n === 1 ? .5 : i / (n - 1)), tipR = sw * 1.1;
+  /* 통 뒤판 */
+  ctx.fillStyle = 'rgba(0,0,0,.45)'; ctx.beginPath(); ctx.ellipse(cx, bot + 4, cw * .56, 12, 0, 0, TAU); ctx.fill();
+  const cupBack = () => { ctx.beginPath(); ctx.moveTo(cx - cw / 2, top); ctx.lineTo(cx + cw / 2, top); ctx.lineTo(cx + cw * .44, bot); ctx.lineTo(cx - cw * .44, bot); ctx.closePath(); };
+  cupBack(); ctx.fillStyle = vgrad(top, bot, '#2A1604', '#120903'); ctx.fill();
+  /* 제비: 표시는 아래쪽 끝에 있어 통 안에 숨어 있고, 뽑아 올리면 드러납니다 */
+  const order = plan ? plan.pullAt : null, lastPull = order ? Math.max(...order.filter(t => live && e >= t), -1) : -1;
+  P.forEach((who, i) => {
+    const x = X(i), pa = order ? order[i] : Infinity, pulled = live && e >= pa, u = pulled ? clamp((e - pa) / 750, 0, 1) : 0, rise = 1 - Math.pow(1 - u, 3);
+    const win = plan && plan.winners.includes(i), tilt = (i - (n - 1) / 2) / Math.max(n - 1, 1) * .16 * (1 - rise);
+    const yTop = top - len * .42 - rise * len * .64, yBot = yTop + len, tipShow = clamp((top - 4 - yBot) / (tipR * 2), 0, 1);
+    ctx.save(); ctx.translate(x, top); ctx.rotate(tilt); ctx.translate(-x, -top);
+    rr(x - sw / 2 + 2, yTop + 3, sw, len, sw / 2, 'rgba(0,0,0,.35)');
+    rr(x - sw / 2, yTop, sw, len, sw / 2, vgrad(yTop, yBot, '#F6E6C2', '#D9B986'), 'rgba(90,60,20,.5)', 1);
+    ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.fillRect(x - sw / 2 + 1.5, yTop + 3, sw * .25, len - 6);
+    if (tipShow > 0) {
+      if (win) { emit(() => disc(x, yBot - tipR, tipR * 2.4 * tipShow, `rgba(255,80,110,${.4 * tipShow})`)); disc(x, yBot - tipR, tipR * 1.15 * tipShow, vgrad(yBot - tipR * 2, yBot, '#FF8DA6', '#E0244F', '#8E0D2E')); disc(x - tipR * .3, yBot - tipR * 1.3, tipR * .3 * tipShow, 'rgba(255,255,255,.55)'); }
+      else disc(x, yBot - tipR, tipR * .85 * tipShow, '#3A2A1A');
+    }
+    ctx.restore();
+    if (pulled && (win || pa === lastPull)) { ctx.font = font(clamp(sw * 1.15, 11, 15)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; const nm = fit(who.name, 90); ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.6)'; ctx.strokeText(nm, x, yTop - 12); ctx.fillStyle = win ? '#FFB3C4' : '#FFF4DC'; ctx.fillText(nm, x, yTop - 12); }
+  });
+  /* 통 앞판 */
+  cupBack(); ctx.fillStyle = vgrad(top, bot, '#8A1F3A', '#4A0E1F'); ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = '#E8B93A'; ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,.1)'; ctx.beginPath(); ctx.moveTo(cx - cw * .42, top + 8); ctx.lineTo(cx - cw * .3, top + 8); ctx.lineTo(cx - cw * .26, bot - 8); ctx.lineTo(cx - cw * .37, bot - 8); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, top, cw / 2, 12, 0, 0, TAU); ctx.fillStyle = '#5E1227'; ctx.fill(); ctx.strokeStyle = '#FFE08A'; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(cx, top, cw / 2 - 8, 7, 0, 0, TAU); ctx.fillStyle = '#1A0A0E'; ctx.fill();
+  ctx.font = font(clamp(cw * .11, 14, 26), true); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#FFE08A'; ctx.fillText('제비뽑기', cx, cy + 10);
+  if (!plan) { ctx.font = font(clamp(W / 26, 14, 20), true); ctx.fillStyle = '#FFE9A6'; ctx.fillText('끝이 빨간 제비가 당첨', W / 2, 30); }
+  /* 뽑는 중인 이름 안내 */
+  if (live && e >= plan.revealAt) { const w = plan.winners.map(i => P[i]); namePlate(W / 2, Math.max(60, top - len * .9 - 50), plan.names.join(', '), w[0].color, back((e - plan.revealAt - 150) / 450), Math.min(W - 40, 460)); }
+}
+
 /* ───────── 소리 타이밍: 지나간 순간만 한 번 울립니다 ───────── */
 let prevE = -Infinity, prevRound = null;
 let reelA = null;
 function cues(plan, e) {
   const hit = t => prevE < t && e >= t && e - t < 260;
-  if (hit(-3000)) snd.say('go_' + plan.mode);
+  if (hit(-3000)) snd.say(snd.has('v_go_' + plan.mode) ? 'go_' + plan.mode : 'drum');
   for (const t of [-3000, -2000, -1000]) if (hit(t)) sfx.beep(false);
   if (hit(0)) sfx.beep(true);
   if (plan.mode === 'roulette') for (let i = 0; i < plan.k; i++) {
@@ -1245,6 +1418,23 @@ function cues(plan, e) {
     if (hit(INTRO + TRACE - 4000)) snd.fx('drumroll', .7);
     if (hit(INTRO + TRACE - 2400)) snd.say('drum');
     if (hit(INTRO + TRACE)) sfx.ding();
+  }
+  if (plan.mode === 'bomb') for (let i = 0; i < plan.k; i++) {
+    const s = i * (BHOP + BHOLD), ph = plan.phases[i];
+    if (e >= s && e < s + BHOP && prevE >= s) { const a = bombAt(ph, e - s).h, b = bombAt(ph, prevE - s).h; if (a !== b) sfx.tick(.9 + (a % 3) * .15); }
+    if (hit(s) && i > 0) snd.say('next');
+    if (hit(s + BHOP - 1400)) sfx.rise(1.3);
+    if (hit(s + BHOP)) { sfx.thunk(); snd.fx('pop', .9, () => sfx.pop()); snd.fx('sting', .5); snd.say('pick'); buzz([40, 30, 160]); }
+  }
+  else if (plan.mode === 'dice') {
+    if (hit(0)) snd.fx('rattle', .8);
+    if (!snd.has('s_rattle') && e >= 0 && e < DROLL && Math.floor(e / 110) !== Math.floor(prevE / 110)) sfx.tick(.6 + Math.random() * .5);
+    plan.settleAt.forEach(t => { if (hit(t)) sfx.clack(); });
+    if (hit(plan.revealAt)) { sfx.ding(); snd.say('pick'); }
+  }
+  else if (plan.mode === 'straws') {
+    plan.pullAt.forEach((t, i) => { if (hit(t)) snd.fx('flip', .6, () => sfx.swish()); if (plan.winners.includes(i) && hit(t + 320)) { snd.fx('sting', .8, () => sfx.sting()); buzz(120); } });
+    if (hit(plan.revealAt)) snd.say('pick');
   }
   if (hit(plan.total)) { snd.fx('tada', .8, () => sfx.win()); buzz([80, 50, 180]); }
   if (hit(plan.total + 450)) snd.say('win');
@@ -1289,7 +1479,7 @@ function frame(T) {
     const fade = REDUCED ? 1 : clamp((T - modeT) / 380, 0, 1);
     ctx.save(); ctx.globalAlpha = fade;
     if (shake) ctx.translate((Math.random() - .5) * shake * 2, (Math.random() - .5) * shake * 2);
-    ({ roulette: drawRoulette, slot: drawSlot, cards: drawCards, capsule: drawCapsule, ladder: drawLadder })[mode()](P, plan, eDraw, T, dt);
+    ({ roulette: drawRoulette, slot: drawSlot, cards: drawCards, capsule: drawCapsule, ladder: drawLadder, bomb: drawBomb, dice: drawDice, straws: drawStraws })[mode()](P, plan, eDraw, T, dt);
     ctx.restore();
     bloom(); drawSweep(T, ph);
     if (ph === 'running') drawHush(plan, e);
@@ -1300,6 +1490,9 @@ function frame(T) {
     else if (ph === 'running') {
       const many = plan.k > 1; let i = 0, t;
       if (plan.mode === 'ladder') t = e < INTRO + TRACE ? '사다리 타는 중' : '결과 공개';
+      else if (plan.mode === 'bomb') { const q = seqPosB(e, plan.k); i = q.i; t = q.hold ? `${plan.names[i]} 앞에서 터졌습니다` : many ? `${plan.k}명 중 ${i + 1}번째, 폭탄 돌리는 중` : '폭탄 돌리는 중'; }
+      else if (plan.mode === 'dice') t = e < DROLL ? '주사위 굴리는 중' : e < plan.revealAt ? '눈 확인 중' : `가장 높은 눈, ${plan.names.join(', ')}`;
+      else if (plan.mode === 'straws') t = e < plan.revealAt ? '제비 뽑는 중' : `빨간 제비, ${plan.names.join(', ')}`;
       else if (plan.mode === 'cards') { const found = plan.winners.filter(w => e >= plan.flipAt[w] + 250).map(w => plan.P[w].name); t = e < plan.flipStart ? '카드 돌리는 중' : found.length ? `조커가 나왔습니다, ${found.join(', ')}` : '카드 여는 중'; }
       else if (plan.mode === 'slot') {
         const { spin, local } = curSpin(plan, e); i = spin.w;
@@ -1308,7 +1501,7 @@ function frame(T) {
         i = e < MIX ? 0 : Math.min(Math.floor((e - MIX) / EACH), plan.k - 1);
         t = e < MIX ? '캡슐 섞는 중' : many ? `${plan.k}명 중 ${i + 1}번째 뽑는 중` : '뽑는 중';
       } else { const q = seqPos(e, plan.k); i = q.i; t = q.hold ? `${plan.names[i]} 칸에 들어갔습니다` : many ? `${plan.k}명 중 ${i + 1}번째, 공이 도는 중` : '공이 도는 중'; }
-      if (many && i > 0 && plan.mode !== 'ladder' && plan.mode !== 'cards') t += `. 지금까지 ${plan.names.slice(0, i).join(', ')}`;
+      if (many && i > 0 && ['roulette', 'slot', 'capsule', 'bomb'].includes(plan.mode)) t += `. 지금까지 ${plan.names.slice(0, i).join(', ')}`;
       setStatus(t);
     } else setStatus('');
   }
